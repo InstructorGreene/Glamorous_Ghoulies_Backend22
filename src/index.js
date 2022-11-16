@@ -14,6 +14,7 @@ const dburi = process.env.DBURI; // dburi is now equal to DBURI from .env
 
 // Import those Schemas we just created
 const { User } = require("../models/user");
+const { Stall } = require("../models/stall");
 
 //Connect to MongoDB
 mongoose.connect(dburi, { useNewUrlParser: true });
@@ -50,16 +51,18 @@ app.listen(port, () => {
 	console.log(`listening on port ${port}`);
 });
 
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // Users // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
 //-----------------//
-// Get all request //
+// Get all Users-- //
 //-----------------//
 app.get("/", async (req, res) => {
 	res.send(await User.find());
 	// Remember User was defined in our 'User.js' Mongoose schema
 	// Mongoose is handling communications with the db via .find()
 });
-
-//TODO: Add other requests
 
 //-----------------//
 // Create new User //
@@ -85,6 +88,46 @@ app.delete("/:id", async (req, res) => {
 app.put("/:id", async (req, res) => {
 	await User.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
 	res.send({ message: "User updated." });
+});
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // Stalls // // // // // // // // // // // // // // /
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+//-----------------//
+// Get all ------- //
+//-----------------//
+
+app.get("/bookings", async (req, res) => {
+	res.send(await Stall.find());
+});
+
+//-----------------//
+//Create new Stall //
+//-----------------//
+
+app.post("/bookings", async (req, res) => {
+	const newStall = req.body;
+	const stall = new Stall(newStall);
+	await stall.save();
+	res.send({ message: "New Stall inserted." });
+});
+
+//-----------------//
+// Delete a Stall  //
+//-----------------//
+
+app.delete("/bookings/:id", async (req, res) => {
+	await Stall.deleteOne({ _id: ObjectId(req.params.id) });
+	res.send({ message: "Stall removed." });
+});
+
+//-----------------//
+// Update a Stall  //
+//-----------------//
+app.put("/bookings/:id", async (req, res) => {
+	await Stall.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
+	res.send({ message: "Stall updated." });
 });
 
 // Mongoose interacts with the DB
