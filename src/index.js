@@ -7,11 +7,13 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const { ObjectId } = require("mongodb");
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid");
+
 const port = process.env.PORT; // port is now equal to PORT from .env
 const dburi = process.env.DBURI; // dburi is now equal to DBURI from .env
 
 // Import those Schemas we just created
-const { User } = require("./models/user");
+const { User } = require("../models/user");
 
 //Connect to MongoDB
 mongoose.connect(dburi, { useNewUrlParser: true });
@@ -28,6 +30,19 @@ app.use(bodyParser.json());
 app.use(cors());
 // adding morgan to log HTTP requests
 app.use(morgan("combined"));
+
+app.post("/auth", async (req, res) => {
+	const user = await User.findOne({ username: req.body.username });
+	if (!user) {
+		return res.sendStatus(401);
+	}
+	if (req.body.password !== user.password) {
+		return res.sendStatus(403);
+	}
+	user.token = uuidv4();
+	await user.save();
+	res.send({ token: user.token });
+});
 
 // Startings the express server
 // Waits for requests and handles them accordingly

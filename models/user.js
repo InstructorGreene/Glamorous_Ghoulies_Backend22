@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const userSchema = mongoose.Schema({
 	// Create a Schema constructor ( mongoose.Schema() )
 	// called adSchema, that takes in an object (hence the { opening)
-	name: String,
+	username: String,
 	email: String,
 	password: String,
 	// businessName: String,
