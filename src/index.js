@@ -90,6 +90,52 @@ app.put("/:id", async (req, res) => {
 	res.send({ message: "User updated." });
 });
 
+//-----------------//
+//Get user from ID //
+//-----------------//
+
+app.get("/:id", async (req, res) => {
+	const user = await User.findOne({ _id: ObjectId(req.params.id) });
+	if (!user) {
+		return res.sendStatus(401);
+	}
+	res.send(user);
+});
+
+//-----------------//
+//Get user from tk //
+//-----------------//
+
+app.get("/token/:token", async (req, res) => {
+	const user = await User.findOne({ token: req.params.token });
+	if (!user) {
+		return res.sendStatus(401);
+	}
+	res.send(user);
+});
+
+//-----------------//
+//Auth login User  //
+//-----------------//
+app.post("/auth", async (req, res) => {
+	// Auth login function
+	const user = await User.findOne({ username: req.body.username });
+	if (!user) {
+		// Username not found in DB
+		return res.sendStatus(401);
+	}
+	if (req.body.password !== user.password) {
+		// Password not matching
+		return res.sendStatus(403);
+	}
+	// Set unique token
+	user.token = uuidv4();
+	// Update changes to user in the db (to save the new token)
+	await user.save();
+	// TODO: come back to me
+	res.send({ token: user.token });
+});
+
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // Stalls // // // // // // // // // // // // // // /
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -97,7 +143,6 @@ app.put("/:id", async (req, res) => {
 //-----------------//
 // Get all ------- //
 //-----------------//
-
 app.get("/bookings", async (req, res) => {
 	res.send(await Stall.find());
 });
@@ -105,7 +150,6 @@ app.get("/bookings", async (req, res) => {
 //-----------------//
 //Create new Stall //
 //-----------------//
-
 app.post("/bookings", async (req, res) => {
 	const newStall = req.body;
 	const stall = new Stall(newStall);
@@ -116,7 +160,6 @@ app.post("/bookings", async (req, res) => {
 //-----------------//
 // Delete a Stall  //
 //-----------------//
-
 app.delete("/bookings/:id", async (req, res) => {
 	await Stall.deleteOne({ _id: ObjectId(req.params.id) });
 	res.send({ message: "Stall removed." });
@@ -128,6 +171,14 @@ app.delete("/bookings/:id", async (req, res) => {
 app.put("/bookings/:id", async (req, res) => {
 	await Stall.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
 	res.send({ message: "Stall updated." });
+});
+
+//-----------------//
+// Delete a Stall  //
+//-----------------//
+app.delete("/bookings/:id", async (req, res) => {
+	await Stall.deleteOne({ _id: ObjectId(req.params.id) });
+	res.send({ message: "Stall removed." });
 });
 
 // Mongoose interacts with the DB
