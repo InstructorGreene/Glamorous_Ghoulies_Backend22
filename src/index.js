@@ -28,7 +28,14 @@ app.use(helmet());
 // using bodyParser to parse JSON bodies into JS objects
 app.use(bodyParser.json());
 // enabling CORS for all requests
-app.use(cors());
+app.use(
+	cors({
+		origin: [
+			"https://stannington-carnival-frontend.onrender.com",
+			"http://localhost:3000",
+		],
+	})
+);
 // adding morgan to log HTTP requests
 app.use(morgan("combined"));
 
