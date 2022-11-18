@@ -28,6 +28,7 @@ app.use(helmet());
 // using bodyParser to parse JSON bodies into JS objects
 app.use(bodyParser.json());
 // enabling CORS for all requests
+-app.use(express.urlencoded({ extended: false }));
 app.use(
 	cors({
 		origin: [
