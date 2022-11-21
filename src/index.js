@@ -15,6 +15,10 @@ const dburi = process.env.DBURI; // dburi is now equal to DBURI from .env
 // Import those Schemas we just created
 const { User } = require("../models/user");
 const { Stall } = require("../models/stall");
+const e = require("express");
+
+const { createStall } = require("./stallRoutes.js");
+createStall();
 
 //Connect to MongoDB
 mongoose.connect(dburi, { useNewUrlParser: true });
@@ -27,8 +31,10 @@ const app = express();
 app.use(helmet());
 // using bodyParser to parse JSON bodies into JS objects
 app.use(bodyParser.json());
-// enabling CORS for all requests
+
 -app.use(express.urlencoded({ extended: false }));
+
+// enabling CORS for all requests
 app.use(
 	cors({
 		origin: [
@@ -40,19 +46,6 @@ app.use(
 // adding morgan to log HTTP requests
 app.use(morgan("combined"));
 
-app.post("/auth", async (req, res) => {
-	const user = await User.findOne({ username: req.body.username });
-	if (!user) {
-		return res.sendStatus(401);
-	}
-	if (req.body.password !== user.password) {
-		return res.sendStatus(403);
-	}
-	user.token = uuidv4();
-	await user.save();
-	res.send({ token: user.token });
-});
-
 // Startings the express server
 // Waits for requests and handles them accordingly
 app.listen(port, () => {
@@ -63,29 +56,57 @@ app.listen(port, () => {
 // // // // // // // // // // // // // // // Users // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
-//-----------------//
-// Get all Users-- //
-//-----------------//
-app.get("/", async (req, res) => {
-	res.send(await User.find());
-	// Remember User was defined in our 'User.js' Mongoose schema
-	// Mongoose is handling communications with the db via .find()
-});
+const roleMiddleware = (roles) => {
+	return async (req, res, next) => {
+		const user = await User.findOne({ _id: ObjectId(req.headers.id) });
+		if (roles.includes(user.role)) {
+			return next();
+		} else {
+			console.log("arrived");
+			return res.sendStatus(403);
+		}
+	};
+};
 
 //-----------------//
 // Create new User //
 //-----------------//
-app.post("/", async (req, res) => {
+app.post("/users/", async (req, res) => {
 	const newUser = req.body;
 	const user = new User(newUser);
 	await user.save();
 	res.send({ message: "New User inserted." });
 });
 
+// app.post("/testUser", async (req, res) => {
+// 	const user = new User({
+// 		// called adSchema, that takes in an object (hence the { opening)
+// 		username: "testUserAdmin",
+// 		email: "admin@admin",
+// 		password: "adminPass",
+// 		token: "12345",
+// 		role: "admin",
+// 	});
+// 	await user.save();
+// 	res.send({ message: "New User inserted." });
+// });
+// anything after this, is protected by the following middleware
+
+//-----------------//
+// Get all Users-- //
+//-----------------//
+app.get(
+	"/users/",
+	roleMiddleware(["admin", "committee", "finance"]),
+	async (req, res) => {
+		res.send(await User.find());
+	}
+);
+
 //-----------------//
 // Delete a  User  //
 //-----------------//
-app.delete("/:id", async (req, res) => {
+app.delete("/users/:id", roleMiddleware(["admin"]), async (req, res) => {
 	await User.deleteOne({ _id: ObjectId(req.params.id) });
 	res.send({ message: "User removed." });
 });
@@ -93,7 +114,7 @@ app.delete("/:id", async (req, res) => {
 //-----------------//
 // Update a  User  //
 //-----------------//
-app.put("/:id", async (req, res) => {
+app.put("/users/:id", roleMiddleware(["admin"]), async (req, res) => {
 	await User.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
 	res.send({ message: "User updated." });
 });
@@ -101,23 +122,25 @@ app.put("/:id", async (req, res) => {
 //-----------------//
 //Get user from ID //
 //-----------------//
-
-app.get("/:id", async (req, res) => {
-	const user = await User.findOne({ _id: ObjectId(req.params.id) });
-	if (!user) {
-		return res.sendStatus(401);
+app.get(
+	"/users/:id",
+	roleMiddleware(["finance", "committee", "admin"]),
+	async (req, res) => {
+		const user = await User.findOne({ _id: ObjectId(req.params.id) });
+		if (!user) {
+			return res.sendStatus(404);
+		}
+		res.send(user);
 	}
-	res.send(user);
-});
+);
 
 //-----------------//
 //Get user from tk //
 //-----------------//
-
 app.get("/token/:token", async (req, res) => {
 	const user = await User.findOne({ token: req.params.token });
 	if (!user) {
-		return res.sendStatus(401);
+		return res.sendStatus(404);
 	}
 	res.send(user);
 });
@@ -148,16 +171,31 @@ app.post("/auth", async (req, res) => {
 // // // // // // // // // // // // // // // Stalls // // // // // // // // // // // // // // /
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
-//-----------------//
-// Get all ------- //
-//-----------------//
-app.get("/bookings", async (req, res) => {
-	res.send(await Stall.find());
+//---------------------------//
+//Get Current User's Bookings//
+//---------------------------//
+// Regular accounts should be able to view their own bookings
+app.get("/bookings/:token", async (req, res) => {
+	const currentUser = await User.findOne({ token: req.params.token });
+	res.send(await Stall.find({ userId: ObjectId(currentUser._id) }));
 });
+
+//---------------------------//
+//Get Bookings by status ----//
+//---------------------------//
+// Regular accounts should be able to view their own bookings
+app.get(
+	"/bookings/byStatus/:status",
+	roleMiddleware(["admin", "committee", "finance", "allocator"]),
+	async (req, res) => {
+		res.send(await Stall.find({ status: req.params.status }));
+	}
+);
 
 //-----------------//
 //Create new Stall //
 //-----------------//
+// Regular accounts/Staff accounts should all be able to create bookings
 app.post("/bookings", async (req, res) => {
 	const newStall = req.body;
 	const stall = new Stall(newStall);
@@ -166,28 +204,68 @@ app.post("/bookings", async (req, res) => {
 });
 
 //-----------------//
-// Delete a Stall  //
+// Get all bookings//
 //-----------------//
-app.delete("/bookings/:id", async (req, res) => {
-	await Stall.deleteOne({ _id: ObjectId(req.params.id) });
-	res.send({ message: "Stall removed." });
-});
+
+app.get(
+	"/bookings",
+	roleMiddleware(["committee", "admin", "finance", "allocator"]),
+	async (req, res) => {
+		res.send(await Stall.find());
+	}
+);
 
 //-----------------//
 // Update a Stall  //
 //-----------------//
-app.put("/bookings/:id", async (req, res) => {
-	await Stall.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
-	res.send({ message: "Stall updated." });
-});
+app.put(
+	"/bookings/:id",
+	roleMiddleware(["admin", "finance", "allocator"]),
+	async (req, res) => {
+		await Stall.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
+		res.send({ message: "Stall updated." });
+	}
+);
 
 //-----------------//
 // Delete a Stall  //
 //-----------------//
-app.delete("/bookings/:id", async (req, res) => {
+app.delete("/bookings/:id", roleMiddleware(["admin"]), async (req, res) => {
 	await Stall.deleteOne({ _id: ObjectId(req.params.id) });
 	res.send({ message: "Stall removed." });
 });
+
+//---------------------------//
+//See mix of stall types-----//
+//---------------------------//
+app.get(
+	"/proportions",
+	roleMiddleware(["committee", "admin"]),
+	async (req, res) => {
+		const bookingsList = await Stall.find();
+		let freqMap = {};
+		bookingsList.forEach((item) => {
+			if (!freqMap[item.type]) {
+				freqMap[item.type] = 0;
+			}
+			freqMap[item.type] += 1;
+		});
+		res.send(freqMap);
+	}
+);
+
+//-----------------//
+// Count assigned  //
+//-----------------//
+app.get(
+	"/assigned/",
+	roleMiddleware(["committee", "admin"]),
+	async (req, res) => {
+		let stalls = await Stall.find();
+		let allocatedStalls = stalls.filter((stall) => stall.pitchNo != -1);
+		res.send({ "allocated stalls": allocatedStalls.length });
+	}
+);
 
 // Mongoose interacts with the DB
 var db = mongoose.connection;
