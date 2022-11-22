@@ -63,14 +63,17 @@ app.listen(port, () => {
 // // // // // // // // // // // // // // // Users // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
-//-----------------//
-// Get all Users-- //
-//-----------------//
-app.get("/", async (req, res) => {
-	res.send(await User.find());
-	// Remember User was defined in our 'User.js' Mongoose schema
-	// Mongoose is handling communications with the db via .find()
-});
+const roleMiddleware = (roles) => {
+	return async (req, res, next) => {
+		const user = await User.findOne({ token: req.headers.token });
+		if (roles.includes(user.role)) {
+			return next();
+		} else {
+			console.log("arrived");
+			return res.sendStatus(403);
+		}
+	};
+};
 
 //-----------------//
 // Create new User //
