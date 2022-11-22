@@ -9,6 +9,7 @@ const stallSchema = mongoose.Schema({
 	type: String,
 	comments: String,
 	status: String,
+	pitchNo: String, // Assume we will set -1 to be default (unassigned pitchNo)
 	userId: mongoose.Types.ObjectId,
 });
 
