@@ -71,7 +71,7 @@ const roleMiddleware = (roles) => {
 //-----------------//
 // Create new User //
 //-----------------//
-app.post("/users/", async (req, res) => {
+app.post("/users", async (req, res) => {
 	const newUser = req.body;
 	const user = new User(newUser);
 	await user.save();
@@ -96,7 +96,7 @@ app.post("/users/", async (req, res) => {
 // Get all Users-- //
 //-----------------//
 app.get(
-	"/users/",
+	"/users",
 	roleMiddleware(["admin", "committee", "finance"]),
 	async (req, res) => {
 		res.send(await User.find());
@@ -258,7 +258,7 @@ app.get(
 // Count assigned  //
 //-----------------//
 app.get(
-	"/assigned/",
+	"/assigned",
 	roleMiddleware(["committee", "admin"]),
 	async (req, res) => {
 		let stalls = await Stall.find();
