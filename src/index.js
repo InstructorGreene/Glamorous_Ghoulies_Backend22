@@ -78,20 +78,6 @@ app.post("/users", async (req, res) => {
 	res.send({ message: "New User inserted." });
 });
 
-// app.post("/testUser", async (req, res) => {
-// 	const user = new User({
-// 		// called adSchema, that takes in an object (hence the { opening)
-// 		username: "testUserAdmin",
-// 		email: "admin@admin",
-// 		password: "adminPass",
-// 		token: "12345",
-// 		role: "admin",
-// 	});
-// 	await user.save();
-// 	res.send({ message: "New User inserted." });
-// });
-// anything after this, is protected by the following middleware
-
 //-----------------//
 // Get all Users-- //
 //-----------------//
@@ -99,7 +85,8 @@ app.get(
 	"/users",
 	roleMiddleware(["admin", "committee", "finance"]),
 	async (req, res) => {
-		res.send(await User.find());
+		const users = await User.find();
+		res.send(users);
 	}
 );
 
@@ -262,8 +249,22 @@ app.get(
 	roleMiddleware(["committee", "admin"]),
 	async (req, res) => {
 		let stalls = await Stall.find();
-		let allocatedStalls = stalls.filter((stall) => stall.pitchNo != -1);
+		let allocatedStalls = stalls.filter(
+			(stall) => stall.pitchNo && stall.pitchNo !== "-1"
+		);
 		res.send({ "allocated stalls": allocatedStalls.length });
+	}
+);
+
+//-----------------//
+// Check PitchNo.  //
+//-----------------//
+app.get(
+	"/pitchno/:pitchno",
+	roleMiddleware(["allocator", "admin"]),
+	async (req, res) => {
+		let exists = await Stall.findOne({ pitchNo: req.params.pitchno });
+		res.send(exists ? "true" : "false");
 	}
 );
 
