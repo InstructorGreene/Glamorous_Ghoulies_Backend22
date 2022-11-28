@@ -18,6 +18,7 @@ const { Stall } = require("../models/stall");
 const e = require("express");
 
 const { createStall } = require("./stallRoutes.js");
+const { createHash } = require("crypto");
 createStall();
 
 //Connect to MongoDB
@@ -72,7 +73,11 @@ const roleMiddleware = (roles) => {
 // Create new User //
 //-----------------//
 app.post("/users", async (req, res) => {
+	req.body.password = createHash("sha3-256")
+		.update(req.body.password)
+		.digest("hex");
 	const newUser = req.body;
+
 	const user = new User(newUser);
 	await user.save();
 	res.send({ message: "New User inserted." });
@@ -137,6 +142,9 @@ app.get("/token/:token", async (req, res) => {
 //-----------------//
 app.post("/auth", async (req, res) => {
 	// Auth login function
+	req.body.password = createHash("sha3-256")
+		.update(req.body.password)
+		.digest("hex");
 	const user = await User.findOne({ username: req.body.username });
 	if (!user) {
 		// Username not found in DB
@@ -267,6 +275,12 @@ app.get(
 		res.send(exists ? "true" : "false");
 	}
 );
+
+app.get("/test/:test", async (req, res) => {
+	require("crypto");
+	let out = createHash("sha3-256").update(req.params.test).digest("hex");
+	res.send(out);
+});
 
 // Mongoose interacts with the DB
 var db = mongoose.connection;
