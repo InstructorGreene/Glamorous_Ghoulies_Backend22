@@ -63,7 +63,6 @@ const roleMiddleware = (roles) => {
 		if (roles.includes(user.role)) {
 			return next();
 		} else {
-			console.log("arrived");
 			return res.sendStatus(403);
 		}
 	};
@@ -88,7 +87,7 @@ app.post("/users", async (req, res) => {
 //-----------------//
 app.get(
 	"/users",
-	roleMiddleware(["admin", "committee", "finance"]),
+	roleMiddleware(["admin", "committee", "finance", "super"]),
 	async (req, res) => {
 		const users = await User.find();
 		res.send(users);
@@ -98,15 +97,19 @@ app.get(
 //-----------------//
 // Delete a  User  //
 //-----------------//
-app.delete("/users/:id", roleMiddleware(["admin"]), async (req, res) => {
-	await User.deleteOne({ _id: ObjectId(req.params.id) });
-	res.send({ message: "User removed." });
-});
+app.delete(
+	"/users/:id",
+	roleMiddleware(["admin", "super"]),
+	async (req, res) => {
+		await User.deleteOne({ _id: ObjectId(req.params.id) });
+		res.send({ message: "User removed." });
+	}
+);
 
 //-----------------//
 // Update a  User  //
 //-----------------//
-app.put("/users/:id", roleMiddleware(["admin"]), async (req, res) => {
+app.put("/users/:id", roleMiddleware(["admin", "super"]), async (req, res) => {
 	await User.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
 	res.send({ message: "User updated." });
 });
@@ -116,7 +119,7 @@ app.put("/users/:id", roleMiddleware(["admin"]), async (req, res) => {
 //-----------------//
 app.get(
 	"/users/:id",
-	roleMiddleware(["finance", "committee", "admin"]),
+	roleMiddleware(["finance", "committee", "admin", "super"]),
 	async (req, res) => {
 		const user = await User.findOne({ _id: ObjectId(req.params.id) });
 		if (!user) {
@@ -167,7 +170,7 @@ app.post("/auth", async (req, res) => {
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
 //---------------------------//
-//Get Current User's Bookings//
+//Get Booking by token       //
 //---------------------------//
 // Regular accounts should be able to view their own bookings
 app.get("/bookings/:token", async (req, res) => {
@@ -180,8 +183,8 @@ app.get("/bookings/:token", async (req, res) => {
 //---------------------------//
 // Regular accounts should be able to view their own bookings
 app.get(
-	"/bookings/byStatus/:status",
-	roleMiddleware(["admin", "committee", "finance", "allocator"]),
+	"/bookings/filter/:status",
+	roleMiddleware(["admin", "committee", "finance", "allocator", "super"]),
 	async (req, res) => {
 		res.send(await Stall.find({ status: req.params.status }));
 	}
@@ -204,7 +207,7 @@ app.post("/bookings", async (req, res) => {
 
 app.get(
 	"/bookings",
-	roleMiddleware(["committee", "admin", "finance", "allocator"]),
+	roleMiddleware(["committee", "admin", "finance", "allocator", "super"]),
 	async (req, res) => {
 		res.send(await Stall.find());
 	}
@@ -215,7 +218,7 @@ app.get(
 //-----------------//
 app.put(
 	"/bookings/:id",
-	roleMiddleware(["admin", "finance", "allocator"]),
+	roleMiddleware(["admin", "finance", "allocator", "super"]),
 	async (req, res) => {
 		await Stall.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
 		res.send({ message: "Stall updated." });
@@ -225,17 +228,21 @@ app.put(
 //-----------------//
 // Delete a Stall  //
 //-----------------//
-app.delete("/bookings/:id", roleMiddleware(["admin"]), async (req, res) => {
-	await Stall.deleteOne({ _id: ObjectId(req.params.id) });
-	res.send({ message: "Stall removed." });
-});
+app.delete(
+	"/bookings/:id",
+	roleMiddleware(["admin", "super"]),
+	async (req, res) => {
+		await Stall.deleteOne({ _id: ObjectId(req.params.id) });
+		res.send({ message: "Stall removed." });
+	}
+);
 
 //---------------------------//
 //See mix of stall types-----//
 //---------------------------//
 app.get(
 	"/proportions",
-	roleMiddleware(["committee", "admin"]),
+	roleMiddleware(["committee", "admin", "super"]),
 	async (req, res) => {
 		const bookingsList = await Stall.find();
 		let freqMap = {};
@@ -254,7 +261,7 @@ app.get(
 //-----------------//
 app.get(
 	"/assigned",
-	roleMiddleware(["committee", "admin"]),
+	roleMiddleware(["committee", "admin", "super"]),
 	async (req, res) => {
 		let stalls = await Stall.find();
 		let allocatedStalls = stalls.filter(
@@ -264,12 +271,29 @@ app.get(
 	}
 );
 
+//------------------//
+// Get pitchNo list //
+//------------------//
+
+app.get(
+	"/bookings/list/pitchnumbers",
+	roleMiddleware(["super", "admin"]),
+	async (req, res) => {
+		let stalls = await Stall.find();
+		res.send(
+			stalls
+				.filter((stall) => stall.pitchNo && stall.pitchNo !== "-1")
+				.map((item) => item.pitchNo)
+		);
+	}
+);
+
 //-----------------//
 // Check PitchNo.  //
 //-----------------//
 app.get(
 	"/pitchno/:pitchno",
-	roleMiddleware(["allocator", "admin"]),
+	roleMiddleware(["allocator", "admin", "super"]),
 	async (req, res) => {
 		let exists = await Stall.findOne({ pitchNo: req.params.pitchno });
 		res.send(exists ? "true" : "false");
@@ -277,7 +301,6 @@ app.get(
 );
 
 app.get("/test/:test", async (req, res) => {
-	require("crypto");
 	let out = createHash("sha3-256").update(req.params.test).digest("hex");
 	res.send(out);
 });
