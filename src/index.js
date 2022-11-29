@@ -115,6 +115,14 @@ app.put("/users/:id", roleMiddleware(["admin", "super"]), async (req, res) => {
 });
 
 //-----------------//
+//Check user exists//
+//-----------------//
+app.get("/users/isAvailable/:username", async (req, res) => {
+	const user = await User.findOne({ username: req.params.username });
+	res.send(!user);
+});
+
+//-----------------//
 //Get user from ID //
 //-----------------//
 app.get(
