@@ -114,6 +114,54 @@ app.put("/users/:id", roleMiddleware(["admin", "super"]), async (req, res) => {
 	res.send({ message: "User updated." });
 });
 
+//-------------------//
+//Verify registration//
+//-------------------//
+
+app.post("/verify/registration", async (req, res) => {
+	const user = req.body;
+	let passed = true;
+	const checkLength = (field, str, len) => {
+		if ((passed && str === undefined) || (passed && str.length < len)) {
+			res.send({
+				status: "error",
+				title: "Account creation failed",
+				message: `${field} must be at least ${len} characters in length.`,
+			});
+			passed = false;
+		}
+	};
+	const checkNums = (field, str) => {
+		if (passed && !/\d/.test(str)) {
+			res.send({
+				status: "error",
+				title: "Account creation failed",
+				message: `${field} must contain at least 1 symbol.`,
+			});
+			passed = false;
+		}
+	};
+	checkLength("Username", user.username, 5);
+	checkNums("Username", user.username);
+	checkLength("Password", user.password, 6);
+	checkNums("Password", user.password);
+	if (passed) {
+		res.send({
+			status: "success",
+			title: "Account Created",
+			message: "Account creation was successful, you can now login.",
+		});
+	}
+});
+
+//-----------------//
+//Check user exists//
+//-----------------//
+app.get("/users/isavailable/:username", async (req, res) => {
+	const user = await User.findOne({ username: req.params.username });
+	res.send(!user);
+});
+
 //-----------------//
 //Get user from ID //
 //-----------------//
