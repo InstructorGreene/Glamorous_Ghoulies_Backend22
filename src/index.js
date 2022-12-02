@@ -60,6 +60,9 @@ app.listen(port, () => {
 const roleMiddleware = (roles) => {
 	return async (req, res, next) => {
 		const user = await User.findOne({ token: req.headers.token });
+		if (!user) {
+			return res.sendStatus(403);
+		}
 		if (roles.includes(user.role)) {
 			return next();
 		} else {
