@@ -90,7 +90,7 @@ app.post("/users", async (req, res) => {
 //-----------------//
 app.get(
 	"/users",
-	roleMiddleware(["admin", "committee", "finance", "super"]),
+	roleMiddleware(["admin", "committee", "finance", "super", "allocator"]),
 	async (req, res) => {
 		const users = await User.find();
 		res.send(users);
@@ -178,7 +178,7 @@ app.get("/users/isAvailable/:username", async (req, res) => {
 //-----------------//
 app.get(
 	"/users/:id",
-	roleMiddleware(["finance", "committee", "admin", "super"]),
+	roleMiddleware(["finance", "committee", "admin", "super", "allocator"]),
 	async (req, res) => {
 		const user = await User.findOne({ _id: ObjectId(req.params.id) });
 		if (!user) {
@@ -297,7 +297,7 @@ app.delete(
 //---------------------------//
 app.get(
 	"/proportions",
-	roleMiddleware(["committee", "admin", "super"]),
+	roleMiddleware(["committee", "admin", "super", "allocator", "finance"]),
 	async (req, res) => {
 		const bookingsList = await Stall.find();
 		let freqMap = {};
@@ -316,7 +316,7 @@ app.get(
 //-----------------//
 app.get(
 	"/assigned",
-	roleMiddleware(["committee", "admin", "super"]),
+	roleMiddleware(["committee", "admin", "super", "allocator", "finance"]),
 	async (req, res) => {
 		let stalls = await Stall.find();
 		let allocatedStalls = stalls.filter(
@@ -332,7 +332,7 @@ app.get(
 
 app.get(
 	"/bookings/list/pitchnumbers",
-	roleMiddleware(["super", "admin"]),
+	roleMiddleware(["super", "admin", "allocator"]),
 	async (req, res) => {
 		let stalls = await Stall.find();
 		res.send(
@@ -348,7 +348,7 @@ app.get(
 //-----------------//
 app.get(
 	"/pitchno/:pitchno",
-	roleMiddleware(["allocator", "admin", "super"]),
+	roleMiddleware(["allocator", "admin", "super", "allocator"]),
 	async (req, res) => {
 		let exists = await Stall.findOne({ pitchNo: req.params.pitchno });
 		res.send(exists ? "true" : "false");
