@@ -275,14 +275,10 @@ app.get(
 //-----------------//
 // Update a Stall  //
 //-----------------//
-app.put(
-	"/bookings/:id",
-	roleMiddleware(["admin", "finance", "allocator", "super"]),
-	async (req, res) => {
-		await Stall.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
-		res.send({ message: "Stall updated." });
-	}
-);
+app.put("/bookings/:id", async (req, res) => {
+	await Stall.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
+	res.send({ message: "Stall updated." });
+});
 
 //-----------------//
 // Delete a Stall  //
