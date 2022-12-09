@@ -234,7 +234,9 @@ app.post("/auth", async (req, res) => {
 // Regular accounts should be able to view their own bookings
 app.get("/bookings/:token", async (req, res) => {
 	const currentUser = await User.findOne({ token: req.params.token });
-	res.send(await Stall.find({ userId: ObjectId(currentUser._id) }));
+	if (currentUser) {
+		res.send(await Stall.find({ userId: ObjectId(currentUser._id) }));
+	}
 });
 
 //---------------------------//
